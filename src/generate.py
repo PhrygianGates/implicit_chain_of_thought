@@ -37,6 +37,8 @@ def evaluate(dataloader, tokenizer, ctx, emulator, student, max_new_tokens):
 
     for batch in tqdm.tqdm(dataloader):
         input_ids_all = batch['input_ids_nocot'].to(device)
+        # repeat input_ids_all
+        # input_ids_all = input_ids_all.repeat(2, 1)
         # Remove answer part
         sep_positions = get_sep_position(input_ids_all, tokenizer.eos_token_id)
         input_ids = input_ids_all[:, :sep_positions.max()+1]
@@ -49,6 +51,7 @@ def evaluate(dataloader, tokenizer, ctx, emulator, student, max_new_tokens):
                 input_ids=input_ids,
                 teacher_states=emulated_teacher_states,
                 max_new_tokens=max_new_tokens,
+                num_beams=1,
             )
 
         # Evaluate
@@ -102,7 +105,8 @@ def main():
     tokenizer = emulator.tokenizer
     collate_fn = CoTDataCollator(tokenizer)
     test_dataset = CoTDataset(tokenizer, args.test_path, 1024)
-    test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, collate_fn=collate_fn, shuffle=False)
+    test_dataloader = DataLoader(test_dataset, batch_size=2, collate_fn=collate_fn, shuffle=False)
+    # test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, collate_fn=collate_fn, shuffle=False)
 
     accuracy, throughput  = evaluate(test_dataloader, tokenizer, ctx, emulator, student, args.max_new_tokens)
     print (f"Test Accuracy: {accuracy}. Throughput: {throughput}")
